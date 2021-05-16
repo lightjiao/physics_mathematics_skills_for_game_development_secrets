@@ -24,8 +24,10 @@ public class CheckHitEngine : MonoBehaviour
 
     private void FixedUpdate()
     {
-        // 简单的列表遍历所有可碰撞对象
         foreach (var item in m_Cubes) item.SetHitStatus(false);
+        foreach (var item in m_Spheres) item.SetHitStatus(false);
+
+        // 简单的列表遍历所有可碰撞对象
         for (var i = 0; i < m_Cubes.Count; i++)
         {
             var cube1 = m_Cubes[i];
@@ -38,9 +40,17 @@ public class CheckHitEngine : MonoBehaviour
                     cube2.SetHitStatus(true);
                 }
             }
+
+            foreach (var sphere in m_Spheres)
+            {
+                if (CheckCubeAndSphere(cube1, sphere))
+                {
+                    cube1.SetHitStatus(true);
+                    sphere.SetHitStatus(true);
+                }
+            }
         }
 
-        foreach (var item in m_Spheres) item.SetHitStatus(false);
         for (var i = 0; i < m_Spheres.Count; i++)
         {
             var sphere = m_Spheres[i];
@@ -70,7 +80,61 @@ public class CheckHitEngine : MonoBehaviour
 
     private bool CheckCubeAndSphere(HitableCube cube, HitableSphere sphere)
     {
-        return false;
+        // 圆心在长方形很外面
+        if ((sphere.Point.x < cube.Left - sphere.Radius) ||
+            (sphere.Point.x > cube.Right + sphere.Radius) ||
+            (sphere.Point.y > cube.Top + sphere.Radius) ||
+            (sphere.Point.y < cube.Bottom - sphere.Radius)
+            )
+        {
+            return false;
+        }
+
+
+        var result = true;
+        var radiusSqrt = sphere.Radius * sphere.Radius;
+        if (sphere.Point.x < cube.Left)
+        {
+            // 左上角
+            if (sphere.Point.y > cube.Top)
+            {
+                var deltaX = sphere.Point.x - cube.Left;
+                var deltaY = sphere.Point.y - cube.Top;
+                var disSqrt = deltaX * deltaX + deltaY * deltaY;
+                if (radiusSqrt < disSqrt) result = false;
+            }
+
+            // 左下角
+            else if (sphere.Point.y < cube.Bottom)
+            {
+                var deltaX = sphere.Point.x - cube.Left;
+                var deltaY = sphere.Point.y - cube.Bottom;
+                var disSqrt = deltaX * deltaX + deltaY * deltaY;
+                if (radiusSqrt < disSqrt) result = false;
+            }
+        }
+        else if (sphere.Point.x > cube.Right)
+        {
+            // 右上角
+            if (sphere.Point.y > cube.Top)
+            {
+                var deltaX = sphere.Point.x - cube.Right;
+                var deltaY = sphere.Point.y - cube.Top;
+                var disSqrt = deltaX * deltaX + deltaY * deltaY;
+                if (radiusSqrt < disSqrt) result = false;
+            }
+
+            // 右下角
+            else if (sphere.Point.y < cube.Bottom)
+            {
+                var deltaX = sphere.Point.x - cube.Right;
+                var deltaY = sphere.Point.y - cube.Bottom;
+                var disSqrt = deltaX * deltaX + deltaY * deltaY;
+                if (radiusSqrt < disSqrt) result = false;
+            }
+        }
+
+        return result;
     }
 
     private bool CheckSphereAndSphere(HitableSphere sphereA, HitableSphere sphereB)
