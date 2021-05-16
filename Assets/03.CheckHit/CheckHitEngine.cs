@@ -1,79 +1,59 @@
 using UnityEngine;
+using System.Linq;
 using System.Collections.Generic;
 
-public interface IHitable { }
-
-public static class IHitableEx
+public class Hitable : MonoBehaviour
 {
-    public static void SetHitStatus(this IHitable hitable, bool hit)
+    public void SetHitStatus(bool hit)
     {
         var color = hit ? Color.red : Color.white;
-        if (hitable is MonoBehaviour monoHitable)
-        {
-            monoHitable.GetComponent<Renderer>().material.SetColor("_Color", color);
-        }
+        GetComponent<Renderer>().material.SetColor("_Color", color);
     }
 }
 
 public class CheckHitEngine : MonoBehaviour
 {
-    public List<IHitable> m_HitTargets;
-
-    private void Awake()
-    {
-        m_HitTargets = new List<IHitable>();
-    }
+    public List<HitableCube> m_Cubes;
+    public List<HitableSphere> m_Spheres;
 
     private void Start()
     {
-        var objs = Resources.FindObjectsOfTypeAll<MonoBehaviour>();
-        foreach (var item in objs)
-        {
-            if (item is IHitable)
-            {
-                m_HitTargets.Add((IHitable)item);
-            }
-        }
+        m_Cubes = FindObjectsOfType<HitableCube>().ToList();
+        m_Spheres = FindObjectsOfType<HitableSphere>().ToList();
     }
 
     private void FixedUpdate()
     {
-        foreach (var item in m_HitTargets)
+        // 简单的列表遍历所有可碰撞对象
+        foreach (var item in m_Cubes) item.SetHitStatus(false);
+        for (var i = 0; i < m_Cubes.Count; i++)
         {
-            item.SetHitStatus(false);
+            var cube1 = m_Cubes[i];
+            for (var j = i + 1; j < m_Cubes.Count; j++)
+            {
+                var cube2 = m_Cubes[j];
+                if (CheckCubeAndCube(cube1, cube2))
+                {
+                    cube1.SetHitStatus(true);
+                    cube2.SetHitStatus(true);
+                }
+            }
         }
 
-        // 简单的列表遍历所有可碰撞对象
-        for (var i = 0; i < m_HitTargets.Count; i++)
+        foreach (var item in m_Spheres) item.SetHitStatus(false);
+        for (var i = 0; i < m_Spheres.Count; i++)
         {
-            var item = m_HitTargets[i];
-            if (item is HitableCube cubeA)
+            var sphere = m_Spheres[i];
+            for (var j = i + 1; j < m_Spheres.Count; j++)
             {
-                for (var j = i + 1; j < m_HitTargets.Count; j++)
+                if (CheckSphereAndSphere(sphere, m_Spheres[j]))
                 {
-                    var anOtherOne = m_HitTargets[j];
-                    if (CheckCubeHit(cubeA, anOtherOne))
-                    {
-                        item.SetHitStatus(true);
-                        anOtherOne.SetHitStatus(true);
-                    }
+                    sphere.SetHitStatus(true);
+                    m_Spheres[j].SetHitStatus(true);
                 }
             }
         }
     }
-
-    private bool CheckCubeHit(HitableCube cube, IHitable b)
-    {
-        switch (b)
-        {
-            case HitableCube bCube:
-                return CheckCubeAndCube(cube, bCube);
-            default:
-                return false;
-        }
-
-    }
-
 
     private bool CheckCubeAndCube(HitableCube a, HitableCube b)
     {
@@ -84,6 +64,22 @@ public class CheckHitEngine : MonoBehaviour
                 return true;
             }
         }
+
         return false;
+    }
+
+    private bool CheckCubeAndSphere(HitableCube cube, HitableSphere sphere)
+    {
+        return false;
+    }
+
+    private bool CheckSphereAndSphere(HitableSphere sphereA, HitableSphere sphereB)
+    {
+        var deltaX = sphereA.Point.x - sphereB.Point.x;
+        var deltaY = sphereA.Point.y - sphereB.Point.y;
+        var disSqrt = deltaX * deltaX + deltaY * deltaY;
+
+        var radiusSum = sphereA.Radius + sphereB.Radius;
+        return disSqrt <= (radiusSum * radiusSum);
     }
 }

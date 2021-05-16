@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 
 // 长方形的碰撞检测
-public class HitableCube : MonoBehaviour, IHitable
+public class HitableCube : Hitable
 {
     public float Left;
     public float Right;
