@@ -202,6 +202,17 @@ public class CheckHitEngine : MonoBehaviour
 
     private bool CheckCapsuleAndCapsule(HitableCapsule capsuleA, HitableCapsule capsuleB)
     {
+        // 平行
+        if (capsuleA.Vec.x / capsuleB.Vec.x == capsuleA.Vec.y / capsuleB.Vec.y)
+        {
+            
+        }
+        else
+        {
+            // 求两个线段离得最近的点，求点之间的距离
+            // 距离小于半径之和就碰撞
+        }
+
         return false;
     }
 
@@ -225,7 +236,7 @@ public class CheckHitEngine : MonoBehaviour
                         (my - sphere.Point.y) * (my - sphere.Point.y);
 
         var radiusSum = capsule.Radius + sphere.Radius;
-        if (disSqrt < radiusSum * radiusSum)
+        if (disSqrt <= radiusSum * radiusSum)
         {
             return true;
         }
