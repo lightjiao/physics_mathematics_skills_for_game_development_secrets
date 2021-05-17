@@ -220,12 +220,12 @@ public class CheckHitEngine : MonoBehaviour
 
         var mx = capsule.Vec.x * t + capsule.Point.x;
         var my = capsule.Vec.y * t + capsule.Point.y;
-        // var disSqrt = (new Vector2(mx, my) - sphere.Point).sqrMagnitude;
 
         var disSqrt = (mx - sphere.Point.x) * (mx - sphere.Point.x) +
                         (my - sphere.Point.y) * (my - sphere.Point.y);
 
-        if (disSqrt < capsule.Radius * capsule.Radius)
+        var radiusSum = capsule.Radius + sphere.Radius;
+        if (disSqrt < radiusSum * radiusSum)
         {
             return true;
         }

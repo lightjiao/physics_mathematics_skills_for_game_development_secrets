@@ -10,19 +10,22 @@ public class HitableCapsule : Hitable
 
     // 标准的capsule都是 r = 0.5 height = 2 center = (0, 0, 0)
     private const float _radius = 0.5f;
-    private const float _height = 2f;
+    private const float _height = 1f;
 
     private void FixedUpdate()
     {
         var scale = transform.localScale.x;
 
-        var pos = transform.position;
-        Point.x = pos.x;
-        Point.y = pos.y + _height * scale / 2;
         Radius = _radius * scale;
 
-        var anotherPoint = Point;
-        anotherPoint.y = Point.y - _height * scale;
+        var pos = transform.position;
+        Point.x = pos.x;
+        Point.y = pos.y - (_height - (Radius * 2)) * scale / 2;
+
+        var anotherPoint = new Vector2();
+        anotherPoint.x = pos.x;
+        anotherPoint.y = pos.y + (_height - (Radius * 2)) * scale / 2;
+
         Vec = anotherPoint - Point;
     }
 }
