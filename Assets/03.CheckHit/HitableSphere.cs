@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class HitableSphere : Hitable
 {
-    public Vector3 Point;
+    public Vector2 Point;
     public float Radius;
 
     private void FixedUpdate()
