@@ -30,23 +30,14 @@ public class CheckHitEngine : MonoBehaviour
         // 简单的列表遍历所有可碰撞对象
         for (var i = 0; i < m_Cubes.Count; i++)
         {
-            var cube1 = m_Cubes[i];
+            var cube = m_Cubes[i];
             for (var j = i + 1; j < m_Cubes.Count; j++)
             {
                 var cube2 = m_Cubes[j];
-                if (CheckCubeAndCube(cube1, cube2))
+                if (CheckCubeAndCube(cube, cube2))
                 {
-                    cube1.SetHitStatus(true);
+                    cube.SetHitStatus(true);
                     cube2.SetHitStatus(true);
-                }
-            }
-
-            foreach (var sphere in m_Spheres)
-            {
-                if (CheckCubeAndSphere(cube1, sphere))
-                {
-                    cube1.SetHitStatus(true);
-                    sphere.SetHitStatus(true);
                 }
             }
         }
@@ -60,6 +51,15 @@ public class CheckHitEngine : MonoBehaviour
                 {
                     sphere.SetHitStatus(true);
                     m_Spheres[j].SetHitStatus(true);
+                }
+            }
+
+            foreach (var cube in m_Cubes)
+            {
+                if (CheckSphereAndCube(sphere, cube))
+                {
+                    sphere.SetHitStatus(true);
+                    cube.SetHitStatus(true);
                 }
             }
         }
@@ -78,7 +78,17 @@ public class CheckHitEngine : MonoBehaviour
         return false;
     }
 
-    private bool CheckCubeAndSphere(HitableCube cube, HitableSphere sphere)
+    private bool CheckSphereAndSphere(HitableSphere sphereA, HitableSphere sphereB)
+    {
+        var deltaX = sphereA.Point.x - sphereB.Point.x;
+        var deltaY = sphereA.Point.y - sphereB.Point.y;
+        var disSqrt = deltaX * deltaX + deltaY * deltaY;
+
+        var radiusSum = sphereA.Radius + sphereB.Radius;
+        return disSqrt <= (radiusSum * radiusSum);
+    }
+
+    private bool CheckSphereAndCube(HitableSphere sphere, HitableCube cube)
     {
         // 圆心在长方形很外面
         if ((sphere.Point.x < cube.Left - sphere.Radius) ||
@@ -135,15 +145,5 @@ public class CheckHitEngine : MonoBehaviour
         }
 
         return result;
-    }
-
-    private bool CheckSphereAndSphere(HitableSphere sphereA, HitableSphere sphereB)
-    {
-        var deltaX = sphereA.Point.x - sphereB.Point.x;
-        var deltaY = sphereA.Point.y - sphereB.Point.y;
-        var disSqrt = deltaX * deltaX + deltaY * deltaY;
-
-        var radiusSum = sphereA.Radius + sphereB.Radius;
-        return disSqrt <= (radiusSum * radiusSum);
     }
 }
