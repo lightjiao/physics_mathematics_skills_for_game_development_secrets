@@ -11,6 +11,14 @@ public class Hitable : MonoBehaviour
     }
 }
 
+/// <summary>
+/// TODO: 扇形的碰撞检测没有做，原因是要在界面里“画出”扇形比较麻烦，先不管了
+/// TODO: Cube任意的旋转之后，Cube与Cube之间的碰撞检测
+/// TODO: Sphere 与任意旋转之后的Cube之间的碰撞检测
+/// TODO: Capsule 与 Capsule 之间的碰撞检测
+/// TODO: Capsule 与 Cube 任意旋转之后的碰撞检测
+/// TODO: 每一个碰撞体都需要实现自身的BoundBox，支持不同的旋转的情况下 --> 如果粗暴一点就取最大值就好了
+/// </summary>
 public class CheckHitEngine : MonoBehaviour
 {
     public List<HitableCube> m_Cubes;
