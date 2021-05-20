@@ -4,6 +4,13 @@ using System.Collections.Generic;
 
 public class Hitable : MonoBehaviour
 {
+    public ReactBox BoundingBox;
+
+    private virtual void Awake()
+    {
+        BoundingBox = new ReactBox();
+    }
+
     public void SetHitStatus(bool hit)
     {
         var color = hit ? Color.red : Color.white;
@@ -213,7 +220,7 @@ public class CheckHitEngine : MonoBehaviour
         // 平行
         if (capsuleA.Vec.x / capsuleB.Vec.x == capsuleA.Vec.y / capsuleB.Vec.y)
         {
-            
+
         }
         else
         {
