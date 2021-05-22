@@ -6,7 +6,7 @@ public class Hitable : MonoBehaviour
 {
     public ReactBox BoundingBox;
 
-    private virtual void Awake()
+    protected virtual void Awake()
     {
         BoundingBox = new ReactBox();
     }

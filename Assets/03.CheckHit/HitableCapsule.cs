@@ -8,14 +8,10 @@ public class HitableCapsule : Hitable
     public Vector2 Vec;
     public float Radius;
 
-    [SerializeField]
-    private Transform m_RealPoint;
-    [SerializeField]
-    private Vector2 m_RealPointPos;
-
     // 标准的capsule都是 r = 0.5 height = 2 center = (0, 0, 0)
     private const float _radius = 0.5f;
     private const float _height = 2f;
+    private float m_BoundBoxHalfLength = -1f;
 
     private void FixedUpdate()
     {
@@ -31,8 +27,22 @@ public class HitableCapsule : Hitable
         Point.x = pos.x - Vec.x / 2;
         Point.y = pos.y - Vec.y / 2;
 
+        UpdateBoundBox();
+    }
 
-        // show realPoint
-        m_RealPointPos = m_RealPoint.position;
+    private void UpdateBoundBox()
+    {
+        // 最大值设置为Bound
+        if (m_BoundBoxHalfLength < 0)
+        {
+            m_BoundBoxHalfLength = Vec.magnitude / 2 + Radius;
+        }
+
+        var pos = transform.position;
+
+        BoundingBox.Left = pos.x - m_BoundBoxHalfLength;
+        BoundingBox.Right = pos.x + m_BoundBoxHalfLength;
+        BoundingBox.Top = pos.y + m_BoundBoxHalfLength;
+        BoundingBox.Bottom = pos.y - m_BoundBoxHalfLength;
     }
 }

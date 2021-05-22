@@ -29,6 +29,8 @@ public struct ReactBox
 /// - 总的区域一开始要提前计算好边界，用于划分树节点的中心点和区域
 public class Quadtree
 {
+    private static Dictionary<Hitable, Quadtree> m_TreeLookup = new Dictionary<Hitable, Quadtree>();
+
     // 稀疏的空隙
     private const float m_LooseSpacing = 10f;
 
@@ -54,9 +56,20 @@ public class Quadtree
         if (depth == 3)
         {
             m_Hitables = hitables;
-            return;
+        }
+        else
+        {
+            InternalInit(hitables, depth);
         }
 
+        foreach (var hitable in m_Hitables)
+        {
+            m_TreeLookup[hitable] = this;
+        }
+    }
+
+    private void InternalInit(List<Hitable> hitables, int depth)
+    {
         CreateChilds();
 
         m_Hitables = new List<Hitable>();
@@ -99,33 +112,41 @@ public class Quadtree
     // 创建四个子节点的空间
     private void CreateChilds()
     {
-        var leftTopBox = new ReactBox();
-        leftTopBox.Left = SpaceBox.Left;
-        leftTopBox.Right = SpaceBox.MiddleLength + m_LooseSpacing;
-        leftTopBox.Top = SpaceBox.Top;
-        leftTopBox.Bottom = SpaceBox.MiddleHeight - m_LooseSpacing;
+        var leftTopBox = new ReactBox
+        {
+            Left = SpaceBox.Left,
+            Right = SpaceBox.MiddleLength + m_LooseSpacing,
+            Top = SpaceBox.Top,
+            Bottom = SpaceBox.MiddleHeight - m_LooseSpacing
+        };
         m_LeftTop = new Quadtree(leftTopBox);
 
-        var rightTopBox = new ReactBox();
-        rightTopBox.Left = SpaceBox.MiddleLength - m_LooseSpacing;
-        rightTopBox.Right = SpaceBox.Right;
-        rightTopBox.Top = SpaceBox.Top;
-        rightTopBox.Bottom = SpaceBox.MiddleHeight - m_LooseSpacing;
+        var rightTopBox = new ReactBox
+        {
+            Left = SpaceBox.MiddleLength - m_LooseSpacing,
+            Right = SpaceBox.Right,
+            Top = SpaceBox.Top,
+            Bottom = SpaceBox.MiddleHeight - m_LooseSpacing
+        };
         m_RightTop = new Quadtree(rightTopBox);
 
 
-        var leftBottomBox = new ReactBox();
-        leftBottomBox.Left = SpaceBox.Left;
-        leftBottomBox.Right = SpaceBox.MiddleLength + m_LooseSpacing;
-        leftBottomBox.Top = SpaceBox.MiddleHeight + m_LooseSpacing;
-        leftBottomBox.Bottom = SpaceBox.Bottom;
+        var leftBottomBox = new ReactBox
+        {
+            Left = SpaceBox.Left,
+            Right = SpaceBox.MiddleLength + m_LooseSpacing,
+            Top = SpaceBox.MiddleHeight + m_LooseSpacing,
+            Bottom = SpaceBox.Bottom
+        };
         m_LeftBottom = new Quadtree(leftBottomBox);
 
-        var rightBottomBox = new ReactBox();
-        rightBottomBox.Left = SpaceBox.MiddleLength - m_LooseSpacing;
-        rightBottomBox.Right = SpaceBox.Right;
-        rightBottomBox.Top = SpaceBox.MiddleHeight + m_LooseSpacing;
-        rightBottomBox.Bottom = SpaceBox.Bottom;
+        var rightBottomBox = new ReactBox
+        {
+            Left = SpaceBox.MiddleLength - m_LooseSpacing,
+            Right = SpaceBox.Right,
+            Top = SpaceBox.MiddleHeight + m_LooseSpacing,
+            Bottom = SpaceBox.Bottom
+        };
         m_RightBottom = new Quadtree(rightBottomBox);
     }
 
