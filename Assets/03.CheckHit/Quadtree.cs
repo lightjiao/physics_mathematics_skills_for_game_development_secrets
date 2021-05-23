@@ -17,7 +17,24 @@ public struct ReactBox
 
     public bool IsInBox(ReactBox b)
     {
-        throw new System.Exception();
+        if (Left >= b.Left && Right <= b.Right && Top <= b.Top && Bottom >= b.Bottom)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    public bool IsHit(ReactBox b)
+    {
+        if (Right >= b.Left && Left <= b.Right)
+        {
+            if (Bottom <= b.Top && Top >= b.Bottom)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 
@@ -38,7 +55,7 @@ public class Quadtree
     public ReactBox SpaceBox { get; private set; }
 
     // 这个树节点包含的可碰撞对象
-    private List<Hitable> m_Hitables;
+    public List<Hitable> Hitables;
 
     private Quadtree m_LeftTop;
     private Quadtree m_RightTop;
@@ -50,19 +67,19 @@ public class Quadtree
         SpaceBox = spaceBox;
     }
 
-    private void Init(List<Hitable> hitables, int depth = 1)
+    public void Init(List<Hitable> hitables, int depth = 1)
     {
         // 不超过三层
         if (depth == 3)
         {
-            m_Hitables = hitables;
+            Hitables = hitables;
         }
         else
         {
             InternalInit(hitables, depth);
         }
 
-        foreach (var hitable in m_Hitables)
+        foreach (var hitable in Hitables)
         {
             m_TreeLookup[hitable] = this;
         }
@@ -72,7 +89,7 @@ public class Quadtree
     {
         CreateChilds();
 
-        m_Hitables = new List<Hitable>();
+        Hitables = new List<Hitable>();
         var leftTopHitables = new List<Hitable>();
         var rightTopHitables = new List<Hitable>();
         var leftBottomHitables = new List<Hitable>();
@@ -99,7 +116,7 @@ public class Quadtree
             }
             else
             {
-                m_Hitables.Add(hitable);
+                Hitables.Add(hitable);
             }
         }
 

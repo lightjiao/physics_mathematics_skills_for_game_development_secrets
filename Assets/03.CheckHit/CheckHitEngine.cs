@@ -28,18 +28,29 @@ public class Hitable : MonoBehaviour
 /// </summary>
 public class CheckHitEngine : MonoBehaviour
 {
-    public List<HitableCube> m_Cubes;
-    public List<HitableSphere> m_Spheres;
-    public List<HitableCapsule> m_Capsule;
+    public float ReactBoxLength = 100;
+    private List<HitableCube> m_Cubes;
+    private List<HitableSphere> m_Spheres;
+    private List<HitableCapsule> m_Capsule;
+    private Quadtree m_Quadtree;
 
     private void Start()
     {
+        var allSpace = new ReactBox
+        {
+            Left = -ReactBoxLength / 2,
+            Right = ReactBoxLength / 2,
+            Top = ReactBoxLength / 2,
+            Bottom = -ReactBoxLength / 2
+        };
+
+        m_Quadtree = new Quadtree(allSpace);
+        m_Quadtree.Init(FindObjectsOfType<Hitable>().ToList()); // TODO: 减少FindAll的调用做性能优化
+
         m_Cubes = FindObjectsOfType<HitableCube>().ToList();
         m_Spheres = FindObjectsOfType<HitableSphere>().ToList();
         m_Capsule = FindObjectsOfType<HitableCapsule>().ToList();
     }
-
-
 
     private void FixedUpdate()
     {
@@ -62,14 +73,15 @@ public class CheckHitEngine : MonoBehaviour
         for (var i = 0; i < m_Cubes.Count; i++)
         {
             var cube = m_Cubes[i];
-            for (var j = i + 1; j < m_Cubes.Count; j++)
+            if (false == cube.BoundingBox.IsHit(m_Quadtree.SpaceBox))
             {
-                var cube2 = m_Cubes[j];
-                if (CheckCubeAndCube(cube, cube2))
-                {
-                    cube.SetHitStatus(true);
-                    cube2.SetHitStatus(true);
-                }
+                continue;
+            }
+
+            // 校验节点和子节点的碰撞体
+            foreach (var hitable in m_Quadtree.Hitables)
+            {
+                if (CheckCubes)
             }
         }
     }
