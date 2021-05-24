@@ -4,11 +4,17 @@ using System.Collections.Generic;
 
 public class Hitable : MonoBehaviour
 {
+    private static CheckHitEngine m_HitEngint;
+
     public ReactBox BoundingBox;
 
     protected virtual void Awake()
     {
         BoundingBox = new ReactBox();
+        if (m_HitEngint == null)
+        {
+            m_HitEngint = FindObjectOfType<CheckHitEngine>();
+        }
     }
 
     public void SetHitStatus(bool hit)
@@ -16,15 +22,55 @@ public class Hitable : MonoBehaviour
         var color = hit ? Color.red : Color.white;
         GetComponent<Renderer>().material.SetColor("_Color", color);
     }
+
+    private void FixedUpdate()
+    {
+        // m_HitEngint?.UpdatePos();
+    }
 }
 
 /// <summary>
-/// TODO: 扇形的碰撞检测没有做，原因是要在界面里“画出”扇形比较麻烦，先不管了
+/// 用于包裹碰撞体的包围盒，便于计算空间的划分
+/// 这个是轴对齐的，即不会随着物体的旋转而改变方向
+/// </summary>
+public struct ReactBox
+{
+    public float Left;
+    public float Right;
+    public float Top;
+    public float Bottom;
+
+    public float MiddleHeight => (Top + Bottom) / 2;
+    public float MiddleLength => (Left + Right) / 2;
+
+    public bool IsInBox(ReactBox b)
+    {
+        if (Left >= b.Left && Right <= b.Right && Top <= b.Top && Bottom >= b.Bottom)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    public bool IsHit(ReactBox b)
+    {
+        if (Right >= b.Left && Left <= b.Right)
+        {
+            if (Bottom <= b.Top && Top >= b.Bottom)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+/// <summary>
 /// TODO: Cube任意的旋转之后，Cube与Cube之间的碰撞检测
 /// TODO: Sphere 与任意旋转之后的Cube之间的碰撞检测
 /// TODO: Capsule 与 Capsule 之间的碰撞检测
 /// TODO: Capsule 与 Cube 任意旋转之后的碰撞检测
-/// TODO: 每一个碰撞体都需要实现自身的BoundBox，支持不同的旋转的情况下 --> 如果粗暴一点就取最大值就好了
 /// </summary>
 public class CheckHitEngine : MonoBehaviour
 {
@@ -81,7 +127,7 @@ public class CheckHitEngine : MonoBehaviour
             // 校验节点和子节点的碰撞体
             foreach (var hitable in m_Quadtree.Hitables)
             {
-                if (CheckCubes)
+                // if (CheckCubes)
             }
         }
     }
@@ -229,16 +275,8 @@ public class CheckHitEngine : MonoBehaviour
 
     private bool CheckCapsuleAndCapsule(HitableCapsule capsuleA, HitableCapsule capsuleB)
     {
-        // 平行
-        if (capsuleA.Vec.x / capsuleB.Vec.x == capsuleA.Vec.y / capsuleB.Vec.y)
-        {
-
-        }
-        else
-        {
-            // 求两个线段离得最近的点，求点之间的距离
-            // 距离小于半径之和就碰撞
-        }
+        // 求两个线段离得最近的点，求点之间的距离
+        // 距离小于半径之和就碰撞
 
         return false;
     }
@@ -269,5 +307,195 @@ public class CheckHitEngine : MonoBehaviour
         }
 
         return false;
+    }
+
+
+    /// <summary>
+    /// 四叉树加速碰撞检测
+    /// </summary>
+    /// <see>https://www.zhihu.com/question/25111128/answer/30129131</see>
+    /// - 总的区域一开始要提前计算好边界，用于划分树节点的中心点和区域
+    public class Quadtree
+    {
+        private static Dictionary<Hitable, Quadtree> m_HitableLookup = new Dictionary<Hitable, Quadtree>();
+
+        // 稀疏的空隙
+        private const float m_LooseSpacing = 10f;
+
+        // 树节点的空间
+        public ReactBox SpaceBox { get; private set; }
+
+        // 这个树节点包含的可碰撞对象
+        public List<Hitable> Hitables;
+
+        public Quadtree Parent;
+        public Quadtree LeftTop;
+        public Quadtree RightTop;
+        public Quadtree LeftBottom;
+        public Quadtree RightBottom;
+
+        public Quadtree(ReactBox spaceBox, Quadtree parent = null)
+        {
+            SpaceBox = spaceBox;
+            Parent = parent;
+        }
+
+        public void Init(List<Hitable> hitables, int depth = 1)
+        {
+            // 不超过三层
+            if (depth == 3)
+            {
+                Hitables = hitables;
+            }
+            else
+            {
+                InternalInit(hitables, depth);
+            }
+
+            foreach (var hitable in Hitables)
+            {
+                m_HitableLookup[hitable] = this;
+            }
+        }
+
+        private void InternalInit(List<Hitable> hitables, int depth)
+        {
+            CreateChilds();
+
+            Hitables = new List<Hitable>();
+            var leftTopHitables = new List<Hitable>();
+            var rightTopHitables = new List<Hitable>();
+            var leftBottomHitables = new List<Hitable>();
+            var rightBottomHitables = new List<Hitable>();
+
+            // 遍历所有hitables，如果一个物体没有完全的在任何子box中，那就放到当前节点，否则就放到子节点
+            foreach (var hitable in hitables)
+            {
+                if (hitable.BoundingBox.IsInBox(LeftTop.SpaceBox))
+                {
+                    leftTopHitables.Add(hitable);
+                }
+                else if (hitable.BoundingBox.IsInBox(RightTop.SpaceBox))
+                {
+                    rightTopHitables.Add(hitable);
+                }
+                else if (hitable.BoundingBox.IsInBox(LeftBottom.SpaceBox))
+                {
+                    leftBottomHitables.Add(hitable);
+                }
+                else if (hitable.BoundingBox.IsInBox(RightBottom.SpaceBox))
+                {
+                    rightBottomHitables.Add(hitable);
+                }
+                else
+                {
+                    Hitables.Add(hitable);
+                }
+            }
+
+            LeftTop.Init(leftTopHitables, depth + 1);
+            RightTop.Init(rightTopHitables, depth + 1);
+            LeftBottom.Init(leftBottomHitables, depth + 1);
+            RightBottom.Init(rightBottomHitables, depth + 1);
+        }
+
+        // 创建四个子节点的空间
+        private void CreateChilds()
+        {
+            var leftTopBox = new ReactBox
+            {
+                Left = SpaceBox.Left,
+                Right = SpaceBox.MiddleLength + m_LooseSpacing,
+                Top = SpaceBox.Top,
+                Bottom = SpaceBox.MiddleHeight - m_LooseSpacing
+            };
+            LeftTop = new Quadtree(leftTopBox, this);
+
+            var rightTopBox = new ReactBox
+            {
+                Left = SpaceBox.MiddleLength - m_LooseSpacing,
+                Right = SpaceBox.Right,
+                Top = SpaceBox.Top,
+                Bottom = SpaceBox.MiddleHeight - m_LooseSpacing
+            };
+            RightTop = new Quadtree(rightTopBox, this);
+
+
+            var leftBottomBox = new ReactBox
+            {
+                Left = SpaceBox.Left,
+                Right = SpaceBox.MiddleLength + m_LooseSpacing,
+                Top = SpaceBox.MiddleHeight + m_LooseSpacing,
+                Bottom = SpaceBox.Bottom
+            };
+            LeftBottom = new Quadtree(leftBottomBox, this);
+
+            var rightBottomBox = new ReactBox
+            {
+                Left = SpaceBox.MiddleLength - m_LooseSpacing,
+                Right = SpaceBox.Right,
+                Top = SpaceBox.MiddleHeight + m_LooseSpacing,
+                Bottom = SpaceBox.Bottom
+            };
+            RightBottom = new Quadtree(rightBottomBox, this);
+        }
+
+        /// <summary>
+        /// 更新Hitable在树节点中的位置
+        /// </summary>
+        /// <param name="hitable"></param>
+        /// <param name="node"></param>
+        /// <returns>返回实际更新到了的节点位置</returns>
+        private bool UpdateHitablePos(Hitable hitable, Quadtree node)
+        {
+            if (node == null || false == hitable.BoundingBox.IsInBox(node.SpaceBox))
+            {
+                return false;
+            }
+
+            // 检查并更新到子节点
+            var isInChild = UpdateHitablePos(hitable, node.LeftTop) ||
+                            UpdateHitablePos(hitable, node.RightTop) ||
+                            UpdateHitablePos(hitable, node.LeftBottom) ||
+                            UpdateHitablePos(hitable, node.RightBottom);
+            if (isInChild)
+            {
+                return true;
+            }
+
+            if (m_HitableLookup.TryGetValue(hitable, out var oldNode))
+            {
+                if (oldNode == node)
+                {
+                    return true;
+                }
+            }
+
+            oldNode?.Hitables.Remove(hitable);
+            node.Hitables.Add(hitable);
+            m_HitableLookup[hitable] = node;
+
+            return true;
+        }
+
+        /// <summary>
+        /// 更新Hitable在树节点中的位置
+        /// </summary>
+        /// <param name="hitable"></param>
+        public void UpdateHitablePos(Hitable hitable)
+        {
+            m_HitableLookup.TryGetValue(hitable, out var node);
+            if (node == null) node = this;
+
+            do
+            {
+                if (UpdateHitablePos(hitable, node))
+                {
+                    break;
+                }
+
+                node = node.Parent;
+            } while (node != null);
+        }
     }
 }
