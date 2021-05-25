@@ -91,7 +91,7 @@ public class CheckHitEngine : MonoBehaviour
         };
 
         m_Quadtree = new Quadtree(allSpace);
-        m_Quadtree.Init(FindObjectsOfType<Hitable>().ToList()); // TODO: 减少FindAll的调用做性能优化
+        m_Quadtree.Init(FindObjectsOfType<Hitable>().ToList());
 
         m_Cubes = FindObjectsOfType<HitableCube>().ToList();
         m_Spheres = FindObjectsOfType<HitableSphere>().ToList();
@@ -319,6 +319,8 @@ public class CheckHitEngine : MonoBehaviour
     {
         private static Dictionary<Hitable, Quadtree> m_HitableLookup = new Dictionary<Hitable, Quadtree>();
 
+        private const int m_MaxDepth = 3;
+
         // 稀疏的空隙
         private const float m_LooseSpacing = 10f;
 
@@ -338,70 +340,22 @@ public class CheckHitEngine : MonoBehaviour
         {
             SpaceBox = spaceBox;
             Parent = parent;
-        }
-
-        public void Init(List<Hitable> hitables, int depth = 1)
-        {
-            // 不超过三层
-            if (depth == 3)
-            {
-                Hitables = hitables;
-            }
-            else
-            {
-                InternalInit(hitables, depth);
-            }
-
-            foreach (var hitable in Hitables)
-            {
-                m_HitableLookup[hitable] = this;
-            }
-        }
-
-        private void InternalInit(List<Hitable> hitables, int depth)
-        {
-            CreateChilds();
-
             Hitables = new List<Hitable>();
-            var leftTopHitables = new List<Hitable>();
-            var rightTopHitables = new List<Hitable>();
-            var leftBottomHitables = new List<Hitable>();
-            var rightBottomHitables = new List<Hitable>();
+        }
 
-            // 遍历所有hitables，如果一个物体没有完全的在任何子box中，那就放到当前节点，否则就放到子节点
+        public void Init(List<Hitable> hitables)
+        {
+            CreateChildRecursive(1 + 1);
             foreach (var hitable in hitables)
             {
-                if (hitable.BoundingBox.IsInBox(LeftTop.SpaceBox))
-                {
-                    leftTopHitables.Add(hitable);
-                }
-                else if (hitable.BoundingBox.IsInBox(RightTop.SpaceBox))
-                {
-                    rightTopHitables.Add(hitable);
-                }
-                else if (hitable.BoundingBox.IsInBox(LeftBottom.SpaceBox))
-                {
-                    leftBottomHitables.Add(hitable);
-                }
-                else if (hitable.BoundingBox.IsInBox(RightBottom.SpaceBox))
-                {
-                    rightBottomHitables.Add(hitable);
-                }
-                else
-                {
-                    Hitables.Add(hitable);
-                }
+                UpdateHitablePos(hitable, this);
             }
-
-            LeftTop.Init(leftTopHitables, depth + 1);
-            RightTop.Init(rightTopHitables, depth + 1);
-            LeftBottom.Init(leftBottomHitables, depth + 1);
-            RightBottom.Init(rightBottomHitables, depth + 1);
         }
 
-        // 创建四个子节点的空间
-        private void CreateChilds()
+        internal void CreateChildRecursive(int depth)
         {
+            if (depth == m_MaxDepth) return;
+
             var leftTopBox = new ReactBox
             {
                 Left = SpaceBox.Left,
@@ -410,6 +364,7 @@ public class CheckHitEngine : MonoBehaviour
                 Bottom = SpaceBox.MiddleHeight - m_LooseSpacing
             };
             LeftTop = new Quadtree(leftTopBox, this);
+            LeftTop.CreateChildRecursive(depth + 1);
 
             var rightTopBox = new ReactBox
             {
@@ -419,7 +374,7 @@ public class CheckHitEngine : MonoBehaviour
                 Bottom = SpaceBox.MiddleHeight - m_LooseSpacing
             };
             RightTop = new Quadtree(rightTopBox, this);
-
+            RightTop.CreateChildRecursive(depth + 1);
 
             var leftBottomBox = new ReactBox
             {
@@ -429,6 +384,7 @@ public class CheckHitEngine : MonoBehaviour
                 Bottom = SpaceBox.Bottom
             };
             LeftBottom = new Quadtree(leftBottomBox, this);
+            LeftBottom.CreateChildRecursive(depth + 1);
 
             var rightBottomBox = new ReactBox
             {
@@ -438,6 +394,7 @@ public class CheckHitEngine : MonoBehaviour
                 Bottom = SpaceBox.Bottom
             };
             RightBottom = new Quadtree(rightBottomBox, this);
+            RightBottom.CreateChildRecursive(depth + 1);
         }
 
         /// <summary>
