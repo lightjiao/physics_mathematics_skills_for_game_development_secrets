@@ -4,6 +4,13 @@ using System.Collections.Generic;
 
 public class Hitable : MonoBehaviour
 {
+    public enum HitableType
+    {
+        Null, Cube, Sphere, Capsule,
+    }
+
+    public virtual HitableType Type => HitableType.Null;
+
     private static CheckHitEngine m_HitEngint;
 
     public ReactBox BoundingBox;
