@@ -119,17 +119,23 @@ public class CheckHitEngine : MonoBehaviour
         for (var i = 0; i < m_Cubes.Count; i++)
         {
             var cube = m_Cubes[i];
-            if (false == cube.BoundingBox.IsHit(m_Quadtree.SpaceBox))
-            {
-                continue;
-            }
-
-            // 校验节点和子节点的碰撞体
-            foreach (var hitable in m_Quadtree.Hitables)
-            {
-                // if (CheckCubes)
-            }
+            InnerCheckCubes(cube, m_Quadtree);
         }
+    }
+
+    private void InnerCheckCubes(HitableCube cube, Quadtree quadtree)
+    {
+        if (quadtree == null) return;
+
+        foreach (var hitable in quadtree.Hitables)
+        {
+            // CheckCollision
+        }
+
+        InnerCheckCubes(cube, quadtree.LeftTop);
+        InnerCheckCubes(cube, quadtree.RightTop);
+        InnerCheckCubes(cube, quadtree.LeftBottom);
+        InnerCheckCubes(cube, quadtree.RightBottom);
     }
 
     private bool CheckCubeAndCube(HitableCube a, HitableCube b)
@@ -327,8 +333,10 @@ public class CheckHitEngine : MonoBehaviour
         // 树节点的空间
         public ReactBox SpaceBox { get; private set; }
 
-        // 这个树节点包含的可碰撞对象
-        public List<Hitable> Hitables;
+        // 这个节点包含的可碰撞对象
+        public List<HitableCube> HitableCubes;
+        public List<HitableSphere> HitableSpheres;
+        public List<HitableCapsule> HitableCapsules;
 
         public Quadtree Parent;
         public Quadtree LeftTop;
@@ -340,7 +348,9 @@ public class CheckHitEngine : MonoBehaviour
         {
             SpaceBox = spaceBox;
             Parent = parent;
-            Hitables = new List<Hitable>();
+            HitableCubes = new List<HitableCube>();
+            HitableSpheres = new List<HitableSphere>();
+            HitableCapsules = new List<HitableCapsule>();
         }
 
         public void Init(List<Hitable> hitables)
@@ -403,7 +413,7 @@ public class CheckHitEngine : MonoBehaviour
         /// <param name="hitable"></param>
         /// <param name="node"></param>
         /// <returns>返回实际更新到了的节点位置</returns>
-        private bool UpdateHitablePos(Hitable hitable, Quadtree node)
+        private bool UpdateHitablePos<T>(T hitable, Quadtree node) where T : Hitable
         {
             if (node == null || false == hitable.BoundingBox.IsInBox(node.SpaceBox))
             {
@@ -435,24 +445,41 @@ public class CheckHitEngine : MonoBehaviour
             return true;
         }
 
+        public void AddHitable<T>(T hitable) where T : Hitable
+        {
+        }
+
+        public void RemoveHitable(Hitable hitable)
+        {
+            if (hitable is HitableCube)
+            {
+                HitableCubes.Remove(hitable);
+            }
+        }
+
         /// <summary>
         /// 更新Hitable在树节点中的位置
         /// </summary>
         /// <param name="hitable"></param>
-        public void UpdateHitablePos(Hitable hitable)
+        public void UpdateHitablePos<T>(T hitable) where T : Hitable
         {
             m_HitableLookup.TryGetValue(hitable, out var node);
             if (node == null) node = this;
 
             do
             {
-                if (UpdateHitablePos(hitable, node))
+                if (UpdateHitablePos<T>(hitable, node))
                 {
                     break;
                 }
 
                 node = node.Parent;
             } while (node != null);
+        }
+
+        public void DestroyHitables<T>(T hitable) where T : Hitable
+        {
+
         }
     }
 }
